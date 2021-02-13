@@ -166,6 +166,30 @@ class UserController extends Controller
     }
 
     /**
+     * Get the modified dates for filtering users..
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function modifiedDates()
+    {
+        try {
+            $modifiedDates = $this->repository->modifiedDates();
+
+            return response([
+                'modifiedDates' => $modifiedDates
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response([
+                'code' => 500,
+                'errors' => [
+                    'message' => 'Internal Server Error.'
+                ]
+            ], 500);
+        }
+    }
+
+    /**
      * Validate the request.
      *
      * @param Request $request

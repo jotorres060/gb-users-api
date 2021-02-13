@@ -23,3 +23,5 @@ Route::post('/users/create', [\App\Http\Controllers\Api\UserController::class, "
 Route::put('/users/edit/{id}', [\App\Http\Controllers\Api\UserController::class, "update"])->where('id', '[0-9]+');
 
 Route::delete('/users/delete/{id}', [\App\Http\Controllers\Api\UserController::class, "destroy"])->where('id', '[0-9]+');
+
+Route::get('/get-modified-dates', [\App\Http\Controllers\Api\UserController::class, "modifiedDates"]);

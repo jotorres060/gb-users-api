@@ -47,4 +47,9 @@ class UserRepository implements IUserRepository
         $user->delete();
         return $user;
     }
+
+    public function modifiedDates()
+    {
+        return $this->model->select('id', 'updated_at')->orderByDesc('id')->get();
+    }
 }
