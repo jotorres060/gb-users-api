@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/users', [\App\Http\Controllers\Api\UserController::class, "index"]);
 
-Route::get('/users/{id}', [\App\Http\Controllers\Api\UserController::class, "show"])->where('id', '[0-9]+');
+Route::get('/users/{id}', [\App\Http\Controllers\Api\UserController::class, "find"])->where('id', '[0-9]+');
 
 Route::post('/users/create', [\App\Http\Controllers\Api\UserController::class, "store"]);
 

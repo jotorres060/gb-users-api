@@ -6,13 +6,22 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\User;
 use App\Http\Resources\UserCollection;
+use App\Repositories\IUserRepository;
 use App\Http\Resources\UserResource;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class UserController extends Controller
 {
+    private $repository;
+
+    public function __construct(IUserRepository $repository)
+    {
+        $this->repository = $repository;
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -20,7 +29,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::orderByDesc('id')->get();
+        $users = $this->repository->all();
         return response([
             "users" => new UserCollection($users)
         ], 200);
@@ -32,21 +41,22 @@ class UserController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function find(int $id)
     {
-        $user = User::find($id);
-        if (!$user) {
+        try {
+            $user = $this->repository->find($id);
+
+            return response([
+                'user' => new UserResource($user)
+            ], 200);
+        } catch(ModelNotFoundException $e) {
             return response([
                 'code' => 404,
                 'errors' => [
-                    'message' => 'User not found.'
+                    'message' => $e->getMessage()
                 ]
             ], 404);
         }
-
-        return response([
-            'user' => new UserResource($user)
-        ], 200);
     }
 
     /**
@@ -64,16 +74,7 @@ class UserController extends Controller
 
         try {
             DB::beginTransaction();
-
-            $user = User::create([
-                "name"     => $request->input("name"),
-                "email"    => $request->input("email"),
-                "password" => Hash::make($request->input("password")),
-                "age"      => $request->input("age"),
-                "gender"   => $request->input("gender"),
-                "address"  => $request->input("address")
-            ]);
-
+            $user = $this->repository->store($request->except('password_confirmation'));
             DB::commit();
 
             return response([
@@ -97,46 +98,34 @@ class UserController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, int $id)
     {
         $validator = $this->validateRequest($request);
         if ($validator->fails()) {
             return response(['errors' => $validator->errors()], 200);
         }
 
-        $user = User::find($id);
-        if (!$user) {
-            return response([
-                'code' => 404,
-                'errors' => [
-                    'message' => 'User not found.'
-                ]
-            ], 404);
-        }
-
         try {
             DB::beginTransaction();
-
-            $user->update([
-                "name"     => $request->input("name"),
-                "email"    => $request->input("email"),
-                "password" => Hash::make($request->input("password")),
-                "age"      => $request->input("age"),
-                "gender"   => $request->input("gender"),
-                "address"  => $request->input("address")
-            ]);
-
+            $user = $this->repository->update($request->except('password_confirmation'), $id);
             DB::commit();
 
             return response([
                 'user' => new UserResource($user)
             ], 200);
+        } catch(ModelNotFoundException $e) {
+            return response([
+                'code' => 404,
+                'errors' => [
+                    'message' => $e->getMessage()
+                ]
+            ], 404);
         } catch (\Exception $e) {
             DB::rollBack();
             return response([
                 'code' => 500,
                 'errors' => [
-                    'message' => 'Internal Server Error.'
+                    'message' => 'Internal Server Error.' . $e->getMessage()
                 ]
             ], 500);
         }
@@ -148,26 +137,23 @@ class UserController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(int $id)
     {
-        $user = User::find($id);
-        if (!$user) {
-            return response([
-                'code' => 404,
-                'errors' => [
-                    'message' => 'User not found.'
-                ]
-            ], 404);
-        }
-
         try {
             DB::beginTransaction();
-            $user->delete();
+            $user = $this->repository->delete($id);
             DB::commit();
 
             return response([
                 'user' => new UserResource($user)
             ], 200);
+        } catch(ModelNotFoundException $e) {
+            return response([
+                'code' => 404,
+                'errors' => [
+                    'message' => $e->getMessage()
+                ]
+            ], 404);
         } catch (\Exception $e) {
             DB::rollBack();
             return response([
@@ -190,7 +176,7 @@ class UserController extends Controller
         $data = $request->all();
         return Validator::make($data, [
             'name'     => 'required|string|max:191',
-            'email'    => 'required|email|unique:users,email',
+            'email'    => 'required|email',
             'password' => 'required|string|min:6|confirmed',
             'age'      => 'required|numeric',
             'gender'   => 'required|in:Female,Male',
