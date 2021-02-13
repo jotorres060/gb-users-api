@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\User;
-use App\Http\Requests\UserStore;
 use App\Http\Resources\UserCollection;
 use App\Http\Resources\UserResource;
 use Illuminate\Support\Facades\DB;
@@ -63,23 +62,16 @@ class UserController extends Controller
             return response(['errors' => $validator->errors()], 200);
         }
 
-        $name     = $request->input("name");
-        $email    = $request->input("email");
-        $password = $request->input("password");
-        $age      = $request->input("age");
-        $gender   = $request->input("gender");
-        $address  = $request->input("address");
-
         try {
             DB::beginTransaction();
 
             $user = User::create([
-                "name"     => $name,
-                "email"    => $email,
-                "password" => Hash::make($password),
-                "age"      => $age,
-                "gender"   => $gender,
-                "address"  => $address
+                "name"     => $request->input("name"),
+                "email"    => $request->input("email"),
+                "password" => Hash::make($request->input("password")),
+                "age"      => $request->input("age"),
+                "gender"   => $request->input("gender"),
+                "address"  => $request->input("address")
             ]);
 
             DB::commit();
@@ -122,21 +114,16 @@ class UserController extends Controller
             ], 404);
         }
 
-        $name     = $request->input("name");
-        $email    = $request->input("email");
-        $age      = $request->input("age");
-        $gender   = $request->input("gender");
-        $address  = $request->input("address");
-
         try {
             DB::beginTransaction();
 
             $user->update([
-                "name"     => $name,
-                "email"    => $email,
-                "age"      => $age,
-                "gender"   => $gender,
-                "address"  => $address
+                "name"     => $request->input("name"),
+                "email"    => $request->input("email"),
+                "password" => Hash::make($request->input("password")),
+                "age"      => $request->input("age"),
+                "gender"   => $request->input("gender"),
+                "address"  => $request->input("address")
             ]);
 
             DB::commit();
